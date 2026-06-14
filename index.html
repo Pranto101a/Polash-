@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>পলাশী — বোর্ড গেম</title>
+<!-- offline-ready: fonts rely on system fallbacks -->
+<style>
+:root{
+  --parchment:#f1e1bd;
+  --parchment-2:#e6cf9c;
+  --ink:#2a1a0c;
+  --gold:#c89b3c;
+  --gold-2:#8a6322;
+  --nawab:#1f6f4a;
+  --nawab-2:#0e3a26;
+  --eic:#9b1c1c;
+  --eic-2:#5a0d0d;
+  --danger:#b91c1c;
+  --shadow:0 10px 30px rgba(40,20,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Hind Siliguri",system-ui,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(1200px 800px at 20% -10%, #d9b46a55, transparent 60%),
+    radial-gradient(900px 700px at 110% 10%, #6b2a2a55, transparent 60%),
+    repeating-linear-gradient(45deg,#3a2412 0 2px,#2a1808 2px 4px),
+    #2a1808;
+  min-height:100vh;
+}
+.page{max-width:980px;margin:0 auto;padding:18px 14px 60px}
+.parchment{
+  background:
+    radial-gradient(800px 500px at 50% -10%, #fff6d8, transparent 60%),
+    linear-gradient(180deg,#f7e7bf,#e6cf9c);
+  border:2px solid var(--gold-2);
+  border-radius:18px;
+  box-shadow:var(--shadow), inset 0 0 60px #b6852a55;
+  padding:18px;
+  position:relative;
+}
+.parchment::before,.parchment::after{
+  content:"";position:absolute;inset:6px;border:1px dashed #8a6322aa;border-radius:14px;pointer-events:none;
+}
+h1,h2,h3{font-family:"Cinzel","Hind Siliguri",serif;margin:0 0 8px;letter-spacing:.5px}
+h1{font-size:clamp(28px,5vw,42px);text-align:center;color:#3a1d05;text-shadow:0 1px 0 #fff6c0}
+.subtitle{text-align:center;color:#5a3a14;margin-bottom:14px;font-style:italic}
+
+.btn{
+  appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:700;
+  padding:12px 18px;border-radius:12px;color:#fff5d6;
+  background:linear-gradient(180deg,#7a4a14,#3e2208);
+  border:1px solid #2a1606;box-shadow:0 4px 0 #1c0e02,0 8px 20px #0006;
+  transition:transform .08s ease;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #1c0e02}
+.btn.primary{background:linear-gradient(180deg,#c8932c,#7e5a14);color:#1d0f02}
+.btn.danger{background:linear-gradient(180deg,#c92a2a,#5d0f0f)}
+.btn.ghost{background:transparent;color:#3a1d05;border:1px dashed #8a6322}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:grayscale(.4)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center}
+.grid{display:grid;gap:10px}
+
+label{font-weight:600}
+input[type=text],input[type=number],select{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid #8a6322;
+  background:#fff7df;font-family:inherit;font-size:15px;color:var(--ink);
+}
+.switch{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed #8a6322;border-radius:12px;background:#fff4d0aa}
+.switch input{transform:scale(1.2)}
+
+.section{margin:14px 0}
+.section h2{font-size:20px;color:#3a1d05;display:flex;align-items:center;gap:8px}
+.section h2::before{content:"❖";color:var(--gold)}
+
+.players{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.players .pl{display:flex;align-items:center;gap:6px;background:#fff4d0;border:1px solid #8a6322aa;border-radius:10px;padding:6px}
+.players .pl .num{font-weight:800;color:#7e5a14;min-width:22px;text-align:center}
+
+.map{
+  position:relative;border-radius:14px;overflow:hidden;border:2px solid var(--gold-2);
+  background:#2a1808;margin:10px 0 16px;box-shadow:var(--shadow);
+}
+.map img{display:block;width:100%;height:auto;opacity:.85}
+.map .legend{position:absolute;inset:auto 0 0 0;padding:10px 12px;background:linear-gradient(180deg,transparent,#000a);color:#fff6d6}
+.tracks{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.track{
+  width:54px;height:54px;border-radius:50%;border:3px solid #fff6d6;
+  display:flex;align-items:center;justify-content:center;
+  background:#3a2412;color:#fff6d6;font-weight:800;font-family:"Cinzel",serif;
+  box-shadow:inset 0 0 0 3px #00000055;
+}
+.track.success{background:linear-gradient(180deg,#2f8a5a,#0e3a26);border-color:#cff7e0}
+.track.fail{background:linear-gradient(180deg,#c92a2a,#5d0f0f);border-color:#ffd6d6}
+.track.current{outline:3px dashed #ffe28a;outline-offset:3px}
+.track small{font-size:10px;display:block;line-height:1}
+.score{display:flex;justify-content:space-around;margin-top:8px;color:#fff6d6;background:#0008;padding:8px;border-radius:10px}
+.score .s{display:flex;align-items:center;gap:8px}
+.dot{width:14px;height:14px;border-radius:50%}
+.dot.n{background:#2f8a5a}
+.dot.e{background:#c92a2a}
+
+.card{
+  background:linear-gradient(180deg,#fff7df,#e7cf95);
+  border:2px solid #8a6322;border-radius:14px;padding:10px;box-shadow:var(--shadow);
+  position:relative;
+}
+.charcard{
+  border-radius:14px;overflow:hidden;border:3px solid #8a6322;background:#2a1808;
+  box-shadow:var(--shadow);position:relative;
+}
+.charcard img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover}
+.charcard .nameplate{
+  position:absolute;left:8px;right:8px;bottom:8px;text-align:center;
+  background:linear-gradient(180deg,#fff7df,#e7cf95);
+  border:2px solid #5a3a14;border-radius:8px;padding:6px 4px;
+  font-weight:800;color:#3a1d05;font-size:14px;line-height:1.2;
+}
+.charcard .nameplate small{display:block;font-weight:600;color:#5a3a14;font-size:11px;margin-top:2px}
+.charcard .faction-pill{
+  position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800;
+  color:#fff;text-shadow:0 1px 0 #0006;
+}
+.charcard .faction-pill.n{background:linear-gradient(180deg,#2f8a5a,#0e3a26)}
+.charcard .faction-pill.e{background:linear-gradient(180deg,#c92a2a,#5d0f0f)}
+
+.charlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+
+.banner-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.banner-cards .b{position:relative;border-radius:12px;overflow:hidden;border:3px solid #8a6322;background:#2a1808;box-shadow:var(--shadow)}
+.banner-cards .b img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover}
+.banner-cards .b .lbl{position:absolute;left:6px;right:6px;bottom:6px;text-align:center;background:#fff7df;border:1px solid #5a3a14;border-radius:6px;padding:4px;font-weight:800}
+
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.choice{cursor:pointer;border:3px solid transparent;border-radius:12px;transition:transform .1s}
+.choice:hover{transform:translateY(-2px)}
+.choice.selected{border-color:#c8932c;box-shadow:0 0 0 4px #c8932c44}
+
+.reveal{
+  background:linear-gradient(180deg,#2a1808,#160c04);color:#fff6d6;
+  border:3px solid var(--gold);border-radius:14px;padding:18px;text-align:center;
+}
+.reveal h3{color:#ffe28a;font-size:24px}
+.reveal .charrow{display:flex;gap:12px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:10px}
+.reveal .mini{width:120px}
+
+.team-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.pl-btn{
+  cursor:pointer;border:2px solid #8a6322;border-radius:10px;padding:10px;background:#fff7df;
+  display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;
+  font-weight:700;color:#3a1d05;
+}
+.pl-btn .av{width:40px;height:40px;border-radius:50%;background:#8a6322;color:#fff7df;display:flex;align-items:center;justify-content:center;font-weight:800}
+.pl-btn.sel{background:#ffe28a;border-color:#5a3a14;box-shadow:inset 0 0 0 3px #c8932c}
+.pl-btn.senapati::after{content:"সেনাপতি";font-size:10px;color:#fff;background:#7e5a14;padding:1px 6px;border-radius:999px;margin-top:2px}
+.pl-btn.bot .av{background:#3a1d05}
+.pl-btn.bot::before{content:"🤖";position:absolute}
+
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#2a1808;color:#fff6d6;padding:10px 16px;border-radius:10px;box-shadow:var(--shadow);z-index:99;border:1px solid var(--gold)}
+
+.tabs{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap}
+.tab{padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid #8a6322;background:#fff4d0;font-weight:700;color:#3a1d05}
+.tab.active{background:#3a1d05;color:#ffe28a}
+
+.rule-list{display:grid;gap:8px}
+.rule-list li{background:#fff4d0;border:1px solid #8a6322aa;border-radius:10px;padding:10px;list-style:none}
+.rule-list strong{color:#7e1f1f}
+
+.eic-warn{background:#5d0f0f;color:#ffe7e7;border-radius:10px;padding:10px 12px;margin-top:8px;font-weight:700;text-align:center;border:1px dashed #ffcfcf}
+.nawab-info{background:#0e3a26;color:#d6f7e4;border-radius:10px;padding:10px 12px;margin-top:8px;font-weight:700;text-align:center;border:1px dashed #cff7e0}
+
+footer{color:#fff6d6aa;text-align:center;margin-top:18px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="page" id="app"></div>
+<script>
+// ===================== Bengali helpers =====================
+const BN_DIGITS = ["০","১","২","৩","৪","৫","৬","৭","৮","৯"];
+const toBn = n => String(n).split("").map(c=>/\d/.test(c)?BN_DIGITS[+c]:c).join("");
+
+// ===================== Characters =====================
+// Faction: "N" = Nawab (ভাল), "E" = EIC (বিশ্বাসঘাতক)
+const CHARS = {
+  mir_madan:    {name:"মীর মদন",            faction:"N", img:"images/mir_madan.jpg",
+                 role:"নবাবের সেনাপতি — গোপনে চেনেন EIC পক্ষকে (রায়দুর্লভ ব্যতীত)।",
+                 power:"রিভেইল ফেজে সব EIC পক্ষকে দেখতে পান। শেষে যদি EIC জিতে যায়, তবু মীর মদনকে চিনতে না পারলে নবাব পক্ষ জয়ী হয়।"},
+  siraj:        {name:"নবাব সিরাজ-উদ-দৌলা",  faction:"N", img:"images/siraj.jpg",
+                 role:"বাংলার শেষ স্বাধীন নবাব — দলের নেতা।",
+                 power:"যে রাউন্ডে সিরাজ সেনাপতি হন, ভোটে ১ অতিরিক্ত সমর্থন পায় (টাই হলে পাশ)।"},
+  lutfunnisa:   {name:"লুৎফুন্নিসা বেগম",     faction:"N", img:"images/lutfunnisa.jpg",
+                 role:"নবাবের বিশ্বস্ত পরামর্শক।",
+                 power:"গেমে একবার যে কোনো এক প্লেয়ারকে গোপনে দেখে নিতে পারেন (Inspect)।"},
+  mohanlal:     {name:"মোহন লাল",            faction:"N", img:"images/mohanlal.jpg",
+                 role:"অনুগত দেওয়ান-সেনাপতি।",
+                 power:"যে মিশনে মোহন লাল থাকেন, ১টি Fail কার্ড থাকলেও মিশন সফল ধরা হয় (১ Fail শোষণ)।"},
+
+  mir_jafar:    {name:"মীর জাফর",            faction:"E", img:"images/mirjafar.jpg",
+                 role:"EIC পক্ষের প্রধান বিশ্বাসঘাতক — মিশন ব্যর্থ করুন।",
+                 power:"নবাব পক্ষ ৩ মিশন জিতলে শেষে মীর মদনকে চিহ্নিত করার সুযোগ পান। ঠিক চিনলে EIC জয়ী।"},
+  ghaseti:      {name:"ঘসেটি বেগম",           faction:"E", img:"images/ghaseti.jpg",
+                 role:"ষড়যন্ত্রকারী — EIC সহযোগী।",
+                 power:"একবার অন্য যে কোনো প্লেয়ারের ভোট জোর করে বদলে দিতে পারেন।"},
+  rai_durlabh:  {name:"রায় দুর্লভ",            faction:"E", img:"images/raidurlabh.jpg",
+                 role:"ছদ্মবেশী চর — মীর মদন একে চেনেন না।",
+                 power:"রিভেইল ফেজে মীর মদনের কাছে EIC হিসেবে দেখা যায় না। অন্য EIC সদস্যরাও তাকে চেনেন।"},
+  clive:        {name:"রবার্ট ক্লাইভ",          faction:"E", img:"images/clive.jpg",
+                 role:"EIC বাহিনীর প্রধান।",
+                 power:"যে মিশনে ক্লাইভ থাকেন, তার ১টি Fail কার্ড দ্বিগুণ গণনা হয়।"}
+};
+
+// Mission sizes for 5–10 players (Avalon-style)
+const MISSION_SIZES = {5:[2,3,2,3,3],6:[2,3,4,3,4],7:[2,3,3,4,4],8:[3,4,4,5,5],9:[3,4,4,5,5],10:[3,4,4,5,5]};
+const EIC_COUNT     = {5:2,6:2,7:3,8:3,9:3,10:4};
+const failsRequired = (n,mi)=> (n>=7 && mi===3) ? 2 : 1;
+
+// Role-pool builder
+function buildRoles(n, opt){
+  const eic = EIC_COUNT[n];
+  const nw  = n - eic;
+  const list = [];
+  // Nawab side
+  list.push("mir_madan");
+  if(opt.siraj && list.filter(k=>CHARS[k].faction==="N").length<nw) list.push("siraj");
+  if(opt.lutfunnisa && list.filter(k=>CHARS[k].faction==="N").length<nw) list.push("lutfunnisa");
+  if(opt.mohanlal && list.filter(k=>CHARS[k].faction==="N").length<nw) list.push("mohanlal");
+  while(list.filter(k=>CHARS[k].faction==="N").length<nw) list.push("nawab_loyal");
+  // EIC side
+  list.push("mir_jafar");
+  if(opt.clive && list.filter(k=>CHARS[k].faction==="E").length<eic) list.push("clive");
+  if(opt.rai_durlabh && list.filter(k=>CHARS[k].faction==="E").length<eic) list.push("rai_durlabh");
+  if(opt.ghaseti && list.filter(k=>CHARS[k].faction==="E").length<eic) list.push("ghaseti");
+  while(list.filter(k=>CHARS[k].faction==="E").length<eic) list.push("eic_spy");
+  return list.slice(0,n);
+}
+// Pseudo-roles for filler
+CHARS.nawab_loyal = {name:"নবাবের অনুগত সৈনিক",faction:"N",img:"images/nawab_loyal.jpg",
+  role:"নবাব পক্ষের সাধারণ সৈনিক।",power:"সবসময় শুধু সফল কার্ড দিতে পারেন।"};
+CHARS.eic_spy    = {name:"EIC গোপন চর",faction:"E",img:"images/eic_spy.jpg",
+  role:"EIC পক্ষের গোপন চর।",power:"মিশনে Fail বা Success — যেকোনো কার্ড দিতে পারেন।"};
+
+// Crypto-backed shuffle for stronger randomness (avoids streaks of same role for player 1/2)
+function rnd(){
+  if(typeof crypto!=="undefined" && crypto.getRandomValues){
+    const u=new Uint32Array(1);crypto.getRandomValues(u);return u[0]/4294967296;
+  }
+  return Math.random();
+}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+// ===================== State =====================
+const S = {
+  phase:"setup", // setup,deal,reveal,team,vote,vote-result,mission,mission-result,assassination,game-over
+  playerCount:5,
+  names:Array.from({length:10},(_,i)=>"প্লেয়ার "+toBn(i+1)),
+  bots:Array.from({length:10},(_,i)=>i>=1), // by default p1=human, others bot
+  optional:{siraj:true,lutfunnisa:false,mohanlal:false,clive:true,rai_durlabh:true,ghaseti:false},
+  assigned:[], // [{idx,name,role(key),bot}]
+  revealIdx:0,revealOpen:false,
+  missionNum:1,voteTrack:0,senapati:0,team:[],
+  voterIdx:0,votes:[],
+  missionTurn:0,missionCards:[],
+  history:[],
+  winner:null,assassinTarget:null,
+  tab:"play"
+};
+
+function $(html){const d=document.createElement("div");d.innerHTML=html.trim();return d.firstChild}
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+
+// ===================== Renderers =====================
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML="";
+  app.appendChild(Header());
+  app.appendChild(Tabs());
+  if(S.tab==="rules"){ app.appendChild(RulesPanel()); return }
+  if(S.tab==="chars"){ app.appendChild(CharsPanel()); return }
+  // play tab
+  if(S.phase!=="setup" && S.phase!=="deal" && S.phase!=="reveal") app.appendChild(BattleMap());
+  switch(S.phase){
+    case "setup": app.appendChild(SetupScreen()); break;
+    case "deal":  app.appendChild(DealScreen()); break;
+    case "reveal": app.appendChild(RevealScreen()); break;
+    case "team": app.appendChild(TeamScreen()); break;
+    case "vote": app.appendChild(VoteScreen()); break;
+    case "vote-result": app.appendChild(VoteResultScreen()); break;
+    case "mission-handoff": app.appendChild(MissionHandoff()); break;
+    case "mission": app.appendChild(MissionScreen()); break;
+    case "mission-result": app.appendChild(MissionResultScreen()); break;
+    case "assassination": app.appendChild(AssassinationScreen()); break;
+    case "game-over": app.appendChild(GameOverScreen()); break;
+  }
+}
+
+function Header(){
+  const el = $(`<div class="parchment" style="margin-bottom:12px">
+    <h1>⚔️ পলাশী ⚔️</h1>
+    <div class="subtitle">১৭৫৭ — বাংলার শেষ স্বাধীন নবাব বনাম ইস্ট ইন্ডিয়া কোম্পানি</div>
+  </div>`);
+  return el;
+}
+function Tabs(){
+  const el = $(`<div class="tabs"></div>`);
+  [["play","🎲 খেলা"],["rules","📜 নিয়ম"],["chars","👥 চরিত্র"]].forEach(([k,v])=>{
+    const b = $(`<button class="tab ${S.tab===k?"active":""}">${v}</button>`);
+    b.onclick=()=>{S.tab=k;render()};
+    el.appendChild(b);
+  });
+  return el;
+}
+
+// ----- Setup -----
+function SetupScreen(){
+  const el = $(`<div class="parchment"></div>`);
+  el.appendChild($(`<div class="section"><h2>খেলোয়াড় সংখ্যা: <span id="pcL">${toBn(S.playerCount)}</span></h2></div>`));
+  const range = $(`<input type="range" min="5" max="10" value="${S.playerCount}" style="width:100%">`);
+  range.oninput=e=>{S.playerCount=+e.target.value;document.getElementById("pcL").textContent=toBn(S.playerCount);renderPlayers()};
+  el.appendChild(range);
+
+  const eicBox = $(`<div class="row" style="margin-top:8px"><span class="dot n"></span> নবাব: <b id="nb">${toBn(S.playerCount-EIC_COUNT[S.playerCount])}</b> &nbsp; <span class="dot e"></span> EIC: <b id="eb">${toBn(EIC_COUNT[S.playerCount])}</b></div>`);
+  el.appendChild(eicBox);
+
+  // Players
+  const sec = $(`<div class="section"><h2>খেলোয়াড় ও বট</h2><div class="players" id="players"></div><div class="row" style="margin-top:8px"><button class="btn ghost" id="allBot">সবাই বট</button><button class="btn ghost" id="oneHuman">শুধু আমি</button></div></div>`);
+  el.appendChild(sec);
+
+  function renderPlayers(){
+    document.getElementById("nb").textContent=toBn(S.playerCount-EIC_COUNT[S.playerCount]);
+    document.getElementById("eb").textContent=toBn(EIC_COUNT[S.playerCount]);
+    const wrap = document.getElementById("players"); wrap.innerHTML="";
+    for(let i=0;i<S.playerCount;i++){
+      const row = $(`<div class="pl"><span class="num">${toBn(i+1)}</span></div>`);
+      const inp = $(`<input type="text" value="${S.names[i]}">`);
+      inp.oninput = e=>{S.names[i]=e.target.value};
+      row.appendChild(inp);
+      const sw = $(`<label class="switch" style="padding:4px 8px"><input type="checkbox" ${S.bots[i]?"checked":""}/>🤖</label>`);
+      sw.querySelector("input").onchange=e=>{S.bots[i]=e.target.checked};
+      row.appendChild(sw);
+      wrap.appendChild(row);
+    }
+  }
+  setTimeout(renderPlayers,0);
+  sec.querySelector("#allBot").onclick=()=>{for(let i=0;i<10;i++)S.bots[i]=true;renderPlayers()};
+  sec.querySelector("#oneHuman").onclick=()=>{S.bots[0]=false;for(let i=1;i<10;i++)S.bots[i]=true;S.names[0]="তুমি";renderPlayers()};
+
+  // Optional roles
+  const opts = $(`<div class="section"><h2>অতিরিক্ত চরিত্র (ঐচ্ছিক)</h2><div class="nawab-info" style="margin-bottom:8px">আবশ্যক চরিত্র — <b>মীর মদন</b> (নবাব) ও <b>মীর জাফর</b> (EIC) — সবসময় স্বয়ংক্রিয়ভাবে যুক্ত থাকে। নিচেরগুলো ঐচ্ছিক:</div><div class="grid" id="opts"></div></div>`);
+  el.appendChild(opts);
+  const optsWrap = opts.querySelector("#opts");
+  [["siraj","নবাব সিরাজ-উদ-দৌলা","N"],["lutfunnisa","লুৎফুন্নিসা বেগম","N"],["mohanlal","মোহন লাল","N"],
+   ["clive","রবার্ট ক্লাইভ","E"],["rai_durlabh","রায় দুর্লভ (ছদ্মবেশী)","E"],["ghaseti","ঘসেটি বেগম","E"]].forEach(([k,lbl,f])=>{
+    const sw = $(`<label class="switch"><input type="checkbox" ${S.optional[k]?"checked":""}/><b style="color:${f==='N'?'#0e3a26':'#7e1f1f'}">${lbl}</b><small style="margin-left:auto;opacity:.7">${CHARS[k].power.slice(0,50)}…</small></label>`);
+    sw.querySelector("input").onchange=e=>{S.optional[k]=e.target.checked};
+    optsWrap.appendChild(sw);
+  });
+
+  const start = $(`<div class="row" style="margin-top:14px"><button class="btn primary" style="font-size:18px;padding:14px 28px">⚔️ যুদ্ধ শুরু করো</button></div>`);
+  start.querySelector("button").onclick=startGame;
+  el.appendChild(start);
+  return el;
+}
+
+function startGame(){
+  // Strong randomization to avoid same player always getting same faction
+  let roles = buildRoles(S.playerCount,S.optional);
+  for(let i=0;i<5;i++) roles = shuffle(roles);
+  S.assigned = roles.map((k,i)=>({idx:i,name:(S.names[i]||"প্লেয়ার "+toBn(i+1)).trim(),role:k,bot:S.bots[i],usedPower:false}));
+  S.revealIdx=0;S.revealOpen=false;
+  S.missionNum=1;S.voteTrack=0;S.senapati=Math.floor(rnd()*S.playerCount);
+  S.history=[];S.winner=null;S.assassinTarget=null;S.team=[];
+  S.phase="deal"; render();
+}
+
+// ----- Deal -----
+function DealScreen(){
+  const el = $(`<div class="parchment" style="text-align:center"></div>`);
+  el.innerHTML = `
+    <h2>কার্ড বণ্টন</h2>
+    <p>প্রত্যেক প্লেয়ার পালাক্রমে নিজের ভূমিকা দেখবেন। অন্যরা যেন না দেখে!</p>
+    <div class="banner-cards"><div class="b"><img src="images/success_card.jpg"><div class="lbl">সফল কার্ড</div></div>
+    <div class="b"><img src="images/betray_card.jpg"><div class="lbl">বিশ্বাসঘাতক কার্ড</div></div></div>
+    <div class="row" style="margin-top:14px"><button class="btn primary">শুরু করো</button></div>`;
+  el.querySelector("button").onclick=()=>{S.phase="reveal";S.revealIdx=0;render()};
+  return el;
+}
+
+// ----- Reveal -----
+function RevealScreen(){
+  const pl = S.assigned[S.revealIdx];
+  const el = $(`<div class="parchment"></div>`);
+  if(pl.bot){
+    // skip bot reveals
+    el.innerHTML = `<div class="reveal"><h3>🤖 ${pl.name}</h3><p>বট প্লেয়ার — নিজে নিজে জানবে</p></div><div class="row" style="margin-top:12px"><button class="btn primary">পরবর্তী</button></div>`;
+    el.querySelector("button").onclick=nextReveal;
+    return el;
+  }
+  if(!S.revealOpen){
+    el.innerHTML = `<div class="reveal"><h3>${pl.name}</h3><p>কার্ড দেখতে চাপ দিন (অন্যরা যেন না দেখে)</p></div><div class="row" style="margin-top:12px"><button class="btn primary">🃏 আমার কার্ড দেখো</button></div>`;
+    el.querySelector("button").onclick=()=>{S.revealOpen=true;render()};
+    return el;
+  }
+  const rk = pl.role; const r = CHARS[rk];
+  // Mir madan sees EIC (except rai_durlabh)
+  let extra = "";
+  if(rk==="mir_madan"){
+    const enemies = S.assigned.filter(p=>CHARS[p.role].faction==="E" && p.role!=="rai_durlabh");
+    extra = `<div class="eic-warn">তোমার প্রতিপক্ষ (EIC):<br><b>${enemies.map(p=>p.name+" → "+CHARS[p.role].name).join(" • ")||"—"}</b><br><small>(রায় দুর্লভ ছদ্মবেশী — তাকে চিনতে পারবে না)</small></div>`;
+  } else if(r.faction==="E"){
+    const allies = S.assigned.filter(p=>CHARS[p.role].faction==="E" && p.idx!==pl.idx);
+    extra = `<div class="eic-warn">তোমার EIC সহযোগীরা:<br><b>${allies.map(p=>p.name+" → "+CHARS[p.role].name).join(" • ")||"—"}</b></div>`;
+  } else {
+    extra = `<div class="nawab-info">তুমি নবাব পক্ষের। সকল EIC সদস্য গোপন — সাবধান!</div>`;
+  }
+  el.innerHTML = `<div class="reveal">
+    <h3>${pl.name}</h3>
+    <div class="charrow"><div class="charcard mini">
+      <span class="faction-pill ${r.faction==='N'?'n':'e'}">${r.faction==='N'?'নবাব':'EIC'}</span>
+      <img src="${r.img}"><div class="nameplate">${r.name}<small>${r.role}</small></div></div></div>
+    <p style="margin-top:10px"><b>ক্ষমতা:</b> ${r.power}</p>
+    ${extra}
+    </div><div class="row" style="margin-top:12px"><button class="btn">কার্ড লুকাও ও পরবর্তী</button></div>`;
+  el.querySelector("button").onclick=nextReveal;
+  return el;
+}
+function nextReveal(){
+  S.revealOpen=false;
+  if(S.revealIdx+1<S.playerCount){S.revealIdx++;render()}
+  else{S.phase="team";S.team=[];render()}
+}
+
+// ----- Battle Map -----
+function BattleMap(){
+  const sizes = MISSION_SIZES[S.playerCount];
+  const el = $(`<div></div>`);
+  const m = $(`<div class="map"><img src="images/battle_map.jpg" alt="পলাশীর প্রান্তর"><div class="legend"><b>পলাশীর প্রান্তর</b> — মিশন ${toBn(S.missionNum)}/${toBn(5)} • প্রস্তাব ব্যর্থ: ${toBn(S.voteTrack)}/${toBn(5)}</div></div>`);
+  el.appendChild(m);
+  const tr = $(`<div class="tracks"></div>`);
+  sizes.forEach((sz,i)=>{
+    const h = S.history[i];
+    const cls = h ? (h.result==="success"?"success":"fail") : (i+1===S.missionNum?"current":"");
+    const failsNeed = failsRequired(S.playerCount,i);
+    const t = $(`<div class="track ${cls}" title="মিশন ${toBn(i+1)} • দল ${toBn(sz)}">${toBn(sz)}<small>${failsNeed>1?"২ Fail":""}</small></div>`);
+    tr.appendChild(t);
+  });
+  el.appendChild(tr);
+  const n = S.history.filter(h=>h.result==="success").length;
+  const e = S.history.filter(h=>h.result==="fail").length;
+  el.appendChild($(`<div class="score"><div class="s"><span class="dot n"></span> নবাব জয়: <b>${toBn(n)}/৩</b></div><div class="s"><span class="dot e"></span> EIC জয়: <b>${toBn(e)}/৩</b></div></div>`));
+  return el;
+}
+
+// ----- Team selection -----
+function TeamScreen(){
+  const sizes = MISSION_SIZES[S.playerCount];
+  const need = sizes[S.missionNum-1];
+  const sen = S.assigned[S.senapati];
+  const el = $(`<div class="parchment"></div>`);
+  el.innerHTML = `<h2>মিশন ${toBn(S.missionNum)} — দল গঠন</h2>
+    <p>সেনাপতি: <b>${sen.name}</b> ${sen.bot?'🤖':''} • প্রয়োজন: <b>${toBn(need)}</b> জন</p>`;
+  if(sen.bot){
+    // bot picks team — include self, prefer fellow faction if EIC, random otherwise
+    const team = botPickTeam(sen,need);
+    S.team = team;
+    el.innerHTML += `<div class="reveal"><p>🤖 বট সেনাপতি দল প্রস্তাব করছেন…</p><p><b>${team.map(i=>S.assigned[i].name).join(" • ")}</b></p></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary">ভোটে যাও</button></div>`;
+    el.querySelector("button").onclick=()=>{S.votes=[];S.voterIdx=0;S.phase="vote";render()};
+    return el;
+  }
+  const grid = $(`<div class="team-pick"></div>`);
+  S.assigned.forEach(p=>{
+    const sel = S.team.includes(p.idx);
+    const b = $(`<div class="pl-btn ${sel?'sel':''} ${p.idx===S.senapati?'senapati':''} ${p.bot?'bot':''}"><div class="av">${toBn(p.idx+1)}</div><div>${p.name}</div></div>`);
+    b.onclick=()=>{
+      if(sel) S.team = S.team.filter(x=>x!==p.idx);
+      else if(S.team.length<need) S.team.push(p.idx);
+      render();
+    };
+    grid.appendChild(b);
+  });
+  el.appendChild(grid);
+  const btn = $(`<div class="row" style="margin-top:12px"><button class="btn primary" ${S.team.length!==need?'disabled':''}>প্রস্তাব দাও</button></div>`);
+  btn.querySelector("button").onclick=()=>{if(S.team.length===need){S.votes=[];S.voterIdx=0;S.phase="vote";render()}};
+  el.appendChild(btn);
+  return el;
+}
+
+function botPickTeam(sen,need){
+  // Include self if possible
+  const team = [sen.idx];
+  const others = S.assigned.filter(p=>p.idx!==sen.idx);
+  // EIC sen: include 1 ally if size>=3
+  const senFaction = CHARS[sen.role].faction;
+  if(senFaction==="E" && need>=3){
+    const ally = others.find(p=>CHARS[p.role].faction==="E");
+    if(ally) team.push(ally.idx);
+  }
+  while(team.length<need){
+    const pick = shuffle(others.filter(p=>!team.includes(p.idx)))[0];
+    team.push(pick.idx);
+  }
+  return team.slice(0,need);
+}
+
+// ----- Voting -----
+function VoteScreen(){
+  // collect bot votes automatically, then prompt humans
+  // process sequentially
+  while(S.voterIdx < S.playerCount && S.assigned[S.voterIdx].bot){
+    const p = S.assigned[S.voterIdx];
+    S.votes.push(botVote(p));
+    S.voterIdx++;
+  }
+  if(S.voterIdx >= S.playerCount){ S.phase="vote-result"; render(); return $(`<div></div>`)}
+  const p = S.assigned[S.voterIdx];
+  const el = $(`<div class="parchment" style="text-align:center"></div>`);
+  el.innerHTML = `<h2>ভোট — ${p.name}</h2><p>প্রস্তাবিত দল:<br><b>${S.team.map(i=>S.assigned[i].name).join(" • ")}</b></p>
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" id="y">✅ সমর্থন</button>
+      <button class="btn danger" id="n">❌ বিরোধিতা</button>
+    </div>`;
+  el.querySelector("#y").onclick=()=>{S.votes.push("yes");S.voterIdx++;render()};
+  el.querySelector("#n").onclick=()=>{S.votes.push("no");S.voterIdx++;render()};
+  return el;
+}
+function botVote(p){
+  const f = CHARS[p.role].faction;
+  // EIC: yes if team has EIC member, else no with 60% chance
+  const eicOnTeam = S.team.some(i=>CHARS[S.assigned[i].role].faction==="E");
+  if(f==="E") return eicOnTeam ? "yes" : (Math.random()<0.6?"no":"yes");
+  // Nawab: yes unless 5th proposal looks suspicious (random)
+  return Math.random()<0.75 ? "yes":"no";
+}
+
+function VoteResultScreen(){
+  const yes = S.votes.filter(v=>v==="yes").length;
+  const no  = S.votes.length-yes;
+  let bonus = 0;
+  const sen = S.assigned[S.senapati];
+  if(sen.role==="siraj") bonus=1; // Siraj power
+  const pass = (yes+bonus) > no;
+  const el = $(`<div class="parchment" style="text-align:center"></div>`);
+  const voteCards = S.assigned.map((p,i)=>{
+    const v = S.votes[i];
+    const ic = v==="yes" ? `<span style="color:#0e3a26;font-size:22px">✔</span>` : `<span style="color:#7e1f1f;font-size:22px">✘</span>`;
+    return `<div class="pl-btn ${v==='yes'?'sel':''}" style="min-width:90px"><div style="font-size:13px">${p.name}</div><div>${ic}</div></div>`;
+  }).join("");
+  el.innerHTML = `<h2>ভোটের ফল</h2>
+    <p>সমর্থন: <b style="color:#0e3a26">${toBn(yes)}</b>${bonus?` <small>(+${toBn(bonus)} সিরাজ)</small>`:""} | বিরোধিতা: <b style="color:#7e1f1f">${toBn(no)}</b></p>
+    <div class="team-pick" style="margin:10px 0">${voteCards}</div>
+    <h3 style="margin-top:6px;color:${pass?'#0e3a26':'#7e1f1f'};font-size:22px">${pass?"✅ প্রস্তাব পাস":"❌ প্রস্তাব বাতিল"}</h3>
+    <div class="row" style="margin-top:12px"><button class="btn primary">পরবর্তী</button></div>`;
+  el.querySelector("button").onclick=()=>{
+    if(pass){ S.missionCards=[]; S.missionTurn=0; gotoMissionTurn(); }
+    else{
+      const nt = S.voteTrack+1;
+      if(nt>=5){ S.winner="E"; S.phase="game-over"; render(); return }
+      S.voteTrack=nt; S.senapati=(S.senapati+1)%S.playerCount; S.team=[]; S.phase="team"; render();
+    }
+  };
+  return el;
+}
+
+// Handoff between players during mission (so next player's cards aren't auto-revealed)
+function gotoMissionTurn(){
+  while(S.missionTurn<S.team.length){
+    const p = S.assigned[S.team[S.missionTurn]];
+    if(!p.bot) break;
+    S.missionCards.push(botMissionCard(p));
+    S.missionTurn++;
+  }
+  if(S.missionTurn>=S.team.length){ S.phase="mission"; render(); return; }
+  S.phase="mission-handoff"; render();
+}
+function MissionHandoff(){
+  const p = S.assigned[S.team[S.missionTurn]];
+  const el = $(`<div class="parchment" style="text-align:center"></div>`);
+  el.innerHTML = `<h2>পরবর্তী: ${p.name}</h2>
+    <p>📱 ফোনটি <b>${p.name}</b>-কে দিন।<br>প্রস্তুত হলে নিচের বোতামে চাপ দিন (অন্যরা যেন না দেখে)।</p>
+    <div class="row" style="margin-top:14px"><button class="btn primary">🃏 কার্ড দেখো</button></div>`;
+  el.querySelector("button").onclick=()=>{ S.phase="mission"; render(); };
+  return el;
+}
+
+// ----- Mission -----
+function MissionScreen(){
+  // skip bots
+  while(S.missionTurn<S.team.length){
+    const p = S.assigned[S.team[S.missionTurn]];
+    if(!p.bot) break;
+    S.missionCards.push(botMissionCard(p));
+    S.missionTurn++;
+  }
+  if(S.missionTurn>=S.team.length){ return resolveMission() }
+  const p = S.assigned[S.team[S.missionTurn]];
+  const r = CHARS[p.role];
+  const canFail = r.faction==="E";
+  const el = $(`<div class="parchment" style="text-align:center"></div>`);
+  el.innerHTML = `<h2>মিশন ${toBn(S.missionNum)} — ${p.name}</h2>
+    <p>${r.faction==='N'?'(নবাব পক্ষ — শুধু সফল)':'(EIC পক্ষ — যেকোনো কার্ড)'}</p>
+    <div class="banner-cards">
+      <div class="b choice" data-c="Success"><img src="images/success_card.jpg"><div class="lbl">সফল</div></div>
+      <div class="b choice ${canFail?'':'disabled'}" data-c="Fail" ${canFail?'':'style="opacity:.35;pointer-events:none"'}><img src="images/betray_card.jpg"><div class="lbl">বিশ্বাসঘাতক</div></div>
+    </div>`;
+  el.querySelectorAll(".choice").forEach(c=>c.onclick=()=>{
+    const card = c.dataset.c;
+    S.missionCards.push(card); S.missionTurn++;
+    if(S.missionTurn>=S.team.length){ S.phase="mission"; render(); }
+    else { gotoMissionTurn(); }
+  });
+  return el;
+}
+function botMissionCard(p){
+  const r = CHARS[p.role];
+  if(r.faction==="N") return "Success";
+  // EIC: fail when meaningful
+  return Math.random()<0.85 ? "Fail" : "Success";
+}
+function resolveMission(){
+  let fails = S.missionCards.filter(c=>c==="Fail").length;
+  // Clive doubles 1 fail if on team
+  if(S.team.some(i=>S.assigned[i].role==="clive") && fails>=1) fails++;
+  // Mohanlal absorbs 1 fail
+  if(S.team.some(i=>S.assigned[i].role==="mohanlal") && fails>=1) fails--;
+  const need = failsRequired(S.playerCount,S.missionNum-1);
+  const result = fails>=need ? "fail" : "success";
+  S.history.push({result,team:[...S.team],cards:[...S.missionCards],fails});
+  S.phase="mission-result"; render();
+  return $(`<div></div>`);
+}
+function MissionResultScreen(){
+  const h = S.history[S.history.length-1];
+  const el = $(`<div class="parchment" style="text-align:center"></div>`);
+  const shuffled = shuffle(h.cards);
+  el.innerHTML = `<h2>মিশন ${toBn(S.missionNum)} — ফলাফল</h2>
+    <div class="row" style="margin:10px 0">${shuffled.map(c=>`<img src="images/${c==='Fail'?'betray_card.jpg':'success_card.jpg'}" style="width:80px;border-radius:8px;border:2px solid #5a3a14">`).join("")}</div>
+    <h3 style="color:${h.result==='success'?'#0e3a26':'#7e1f1f'}">${h.result==='success'?'✅ মিশন সফল — নবাবের জয়':'💀 মিশন ব্যর্থ — EIC এর বিজয়'}</h3>
+    <p>মোট Fail: <b>${toBn(h.fails)}</b></p>
+    <div class="row" style="margin-top:10px"><button class="btn primary">পরবর্তী রাউন্ড</button></div>`;
+  el.querySelector("button").onclick=()=>{
+    const n = S.history.filter(h=>h.result==="success").length;
+    const e = S.history.filter(h=>h.result==="fail").length;
+    if(n>=3){ S.phase="assassination"; render(); return }
+    if(e>=3){ S.winner="E"; S.phase="game-over"; render(); return }
+    S.missionNum++; S.voteTrack=0; S.senapati=(S.senapati+1)%S.playerCount; S.team=[]; S.phase="team"; render();
+  };
+  return el;
+}
+
+// ----- Assassination -----
+function AssassinationScreen(){
+  const mj = S.assigned.find(p=>p.role==="mir_jafar");
+  const el = $(`<div class="parchment"></div>`);
+  el.innerHTML = `<h2>চূড়ান্ত আঘাত</h2>
+    <p>নবাব পক্ষ ৩টি মিশন জিতেছে। কিন্তু <b>${mj.name} (মীর জাফর)</b> ${mj.bot?'🤖':''} এখন মীর মদনকে চিহ্নিত করার সুযোগ পান। ঠিক চিনলে EIC জয়ী।</p>
+    <div class="team-pick" id="targets"></div>
+    <div class="row" style="margin-top:12px"><button class="btn danger" id="go" disabled>আঘাত করো</button></div>`;
+  const tg = el.querySelector("#targets");
+  S.assigned.filter(p=>CHARS[p.role].faction==="N").forEach(p=>{
+    const b = $(`<div class="pl-btn ${S.assassinTarget===p.idx?'sel':''}"><div class="av">${toBn(p.idx+1)}</div><div>${p.name}</div></div>`);
+    b.onclick=()=>{S.assassinTarget=p.idx;render()};
+    tg.appendChild(b);
+  });
+  const go = el.querySelector("#go");
+  if(S.assassinTarget!=null) go.disabled=false;
+  // bot auto
+  if(mj.bot && S.assassinTarget==null){
+    setTimeout(()=>{
+      // bot guesses: prefer someone who proposed many successful missions
+      const nawabs = S.assigned.filter(p=>CHARS[p.role].faction==="N");
+      S.assassinTarget = shuffle(nawabs)[0].idx;
+      render();
+      setTimeout(()=>{resolveAssassin()},800);
+    },600);
+  }
+  go.onclick=resolveAssassin;
+  return el;
+}
+function resolveAssassin(){
+  const t = S.assigned[S.assassinTarget];
+  S.winner = (t.role==="mir_madan") ? "E" : "N";
+  S.phase="game-over"; render();
+}
+
+// ----- Game over -----
+function GameOverScreen(){
+  const el = $(`<div class="parchment" style="text-align:center"></div>`);
+  const w = S.winner==="N";
+  el.innerHTML = `<h2>${w?"🏵️ নবাব পক্ষের জয়":"🗡️ EIC পক্ষের জয়"}</h2>
+    <p>${w?"বাংলা স্বাধীন থাকল।":"১৭৫৭ — বাংলার পতন।"}</p>
+    <h3 style="margin-top:14px">সব চরিত্র প্রকাশ</h3>
+    <div class="charlist" style="margin-top:10px">${
+      S.assigned.map(p=>{const r=CHARS[p.role];return `<div class="charcard">
+        <span class="faction-pill ${r.faction==='N'?'n':'e'}">${r.faction==='N'?'নবাব':'EIC'}</span>
+        <img src="${r.img}"><div class="nameplate">${p.name}<small>${r.name}</small></div></div>`}).join("")
+    }</div>
+    <div class="row" style="margin-top:14px"><button class="btn primary">আবার খেলো</button></div>`;
+  el.querySelector("button").onclick=()=>{S.phase="setup";render()};
+  return el;
+}
+
+// ----- Rules tab -----
+function RulesPanel(){
+  const el = $(`<div class="parchment"></div>`);
+  el.innerHTML = `<h2>খেলার নিয়ম</h2>
+  <ul class="rule-list">
+    <li><strong>লক্ষ্য:</strong> নবাব পক্ষ ৫টি মিশনের মধ্যে ৩টি জিতলে বিজয়ী, কিন্তু মীর জাফর শেষে মীর মদনকে চিনতে পারলে EIC জিতে যায়। EIC ৩টি মিশন ব্যর্থ করতে পারলে সরাসরি জয়ী।</li>
+    <li><strong>সেটআপ:</strong> ৫–১০ খেলোয়াড়। প্রত্যেককে গোপনে একটি চরিত্র দেওয়া হয়। <em>মীর মদন</em> রিভেইল ফেজে সব EIC সদস্যকে দেখেন (রায় দুর্লভ ব্যতীত)। EIC সদস্যরা একে অপরকে চেনেন।</li>
+    <li><strong>রাউন্ড:</strong> প্রতি রাউন্ডে সেনাপতি একটি দল প্রস্তাব করেন → সবাই ভোট দেন → পাস হলে নির্বাচিত দল গোপনে <b>সফল</b> বা <b>বিশ্বাসঘাতক</b> কার্ড জমা দেয়।</li>
+    <li><strong>সফল কার্ড 🟢:</strong> মিশন সফল করে। নবাব পক্ষ শুধু সফল দিতে বাধ্য।</li>
+    <li><strong>বিশ্বাসঘাতক কার্ড 🔴:</strong> মিশন ব্যর্থ করে। শুধু EIC সদস্য জমা দিতে পারেন।</li>
+    <li><strong>মিশনের ফলাফল:</strong> ১+ Fail কার্ড থাকলে মিশন ব্যর্থ (মিশন ৪-এ ৭+ প্লেয়ারে ২ Fail লাগে)।</li>
+    <li><strong>৫ বার ভোট ব্যর্থ:</strong> পরপর ৫টি দলের প্রস্তাব বাতিল হলে EIC সরাসরি জয়ী।</li>
+    <li><strong>চূড়ান্ত আঘাত:</strong> নবাব পক্ষ ৩ মিশন জিতলে মীর জাফর একজনকে মীর মদন হিসেবে চিহ্নিত করেন। ঠিক হলে EIC জয়ী, ভুল হলে নবাব।</li>
+    <li><strong>বট মুড 🤖:</strong> যে কোনো খেলোয়াড়ের পাশে 🤖 চালু করলে বট নিজে দল গঠন, ভোট ও কার্ড দেবে।</li>
+  </ul>
+  <h3 style="margin-top:14px">চরিত্র ও ক্ষমতা</h3>
+  <ul class="rule-list">
+    ${Object.entries(CHARS).filter(([k])=>!["nawab_loyal","eic_spy"].includes(k)).map(([k,r])=>
+      `<li><strong style="color:${r.faction==='N'?'#0e3a26':'#7e1f1f'}">${r.name}</strong> — ${r.role}<br><small><b>ক্ষমতা:</b> ${r.power}</small></li>`).join("")}
+  </ul>`;
+  return el;
+}
+
+// ----- Chars tab -----
+function CharsPanel(){
+  const el = $(`<div class="parchment"></div>`);
+  el.innerHTML = `<h2>নবাব পক্ষ</h2><div class="charlist" id="np"></div>
+    <h2 style="margin-top:14px">ইস্ট ইন্ডিয়া কোম্পানি পক্ষ (EIC)</h2><div class="charlist" id="ep"></div>
+    <h2 style="margin-top:14px">মিশন কার্ড</h2><div class="banner-cards">
+      <div class="b"><img src="images/success_card.jpg"><div class="lbl">সফল কার্ড</div></div>
+      <div class="b"><img src="images/betray_card.jpg"><div class="lbl">বিশ্বাসঘাতক কার্ড</div></div>
+    </div>`;
+  const np=el.querySelector("#np"),ep=el.querySelector("#ep");
+  Object.entries(CHARS).filter(([k])=>!["nawab_loyal","eic_spy"].includes(k)).forEach(([k,r])=>{
+    const c = $(`<div class="charcard"><span class="faction-pill ${r.faction==='N'?'n':'e'}">${r.faction==='N'?'নবাব':'EIC'}</span>
+      <img src="${r.img}"><div class="nameplate">${r.name}<small>${r.role}</small></div></div>`);
+    (r.faction==='N'?np:ep).appendChild(c);
+  });
+  return el;
+}
+
+render();
+</script>
+<footer>পলাশী © ২০২৬ — বাংলার ইতিহাস অনুপ্রাণিত বোর্ড গেম</footer>
+</body>
+</html>
